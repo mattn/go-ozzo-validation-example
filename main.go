@@ -30,18 +30,19 @@ func (a Comment) Validate() error {
 		validation.Field(
 			&a.Name,
 			validation.Required,
-			validation.Length(5, 20),
+			validation.RuneLength(5, 20),
 			is.PrintableASCII,
 		),
 		validation.Field(
 			&a.Email,
 			validation.Required,
+			validation.Length(5, 40),
 			is.Email,
 		),
 		validation.Field(
 			&a.Content,
 			validation.Required,
-			validation.Length(5, 50)),
+			validation.RuneLength(5, 50)),
 	)
 }
 
