@@ -5,12 +5,14 @@ import (
 	"net/http"
 
 	validation "github.com/go-ozzo/ozzo-validation"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
 type Comment struct {
 	Name    string `json:"name"`
+	Email   string `json:"email"`
 	Content string `json:"content"`
 }
 
@@ -25,8 +27,21 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 
 func (a Comment) Validate() error {
 	return validation.ValidateStruct(&a,
-		validation.Field(&a.Name, validation.Required, validation.Length(5, 50)),
-		validation.Field(&a.Content, validation.Required, validation.Length(5, 50)),
+		validation.Field(
+			&a.Name,
+			validation.Required,
+			validation.Length(5, 20),
+			is.PrintableASCII,
+		),
+		validation.Field(
+			&a.Email,
+			validation.Required,
+			is.Email,
+		),
+		validation.Field(
+			&a.Content,
+			validation.Required,
+			validation.Length(5, 50)),
 	)
 }
 
