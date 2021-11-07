@@ -2,7 +2,11 @@ package main
 
 import (
 	"embed"
+	"errors"
+	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
@@ -30,19 +34,19 @@ func (a Comment) Validate() error {
 		validation.Field(
 			&a.Name,
 			validation.Required.Error("名前は必須入力です"),
-			validation.RuneLength(5, 20).Error("名前は 5～20 文字です"),
+			validation.RuneLength(5, 20).Error("名前は {min}～{max} 文字です"),
 			is.PrintableASCII.Error("名前はASCIIで入力して下さい"),
 		),
 		validation.Field(
 			&a.Email,
 			validation.Required.Error("メールアドレスは必須入力です"),
-			validation.RuneLength(5, 40).Error("メールアドレスは 5～40 文字です"),
+			validation.RuneLength(5, 40).Error("メールアドレスは {min}～{max} 文字です"),
 			is.Email.Error("メールアドレスを入力して下さい"),
 		),
 		validation.Field(
 			&a.Content,
 			validation.Required.Error("本文は必須入力です"),
-			validation.RuneLength(5, 50).Error("本文は 5～50 文字です"),
+			validation.RuneLength(5, 50).Error("本文は {min}～{max} 文字です"),
 		),
 	)
 }
@@ -67,10 +71,16 @@ func main() {
 		}
 		if err := c.Validate(comment); err != nil {
 			errs := err.(validation.Errors)
+			re := regexp.MustCompile(`{[a-z]+}`)
 			for k, err := range errs {
 				c.Logger().Error(k + ": " + err.Error())
+				verr := err.(validation.Error)
+				params := verr.Params()
+				errs[k] = errors.New(re.ReplaceAllStringFunc(verr.Message(), func(s string) string {
+					return fmt.Sprint(params[strings.Trim(s, "{}")])
+				}))
 			}
-			return err
+			return errs
 		}
 		return c.JSON(http.StatusOK, &struct {
 			Result string `json:"result"`
